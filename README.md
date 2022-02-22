@@ -1,9 +1,8 @@
-# FedIS Algorithms
+# FLIS
 
-The code of paper [FedIS: Dynamic Clustering via Inference Similarity for Non-IID Federated Learning].
+The code of paper [FLIS: Clustered Federated Learning via Inference Similarity for Non-IID Data Distribution].
 
-In this repository, we implemented the FedIS algorithms (FedIS-HT, FedIS-AHC). The algorithms are evaluated on 3 datasets (Cifar-10, Fashion-MNIST, SVHN) with label distribution skew (noniid-#label2, noniid-#label3, noniid-labeldir).
-
+In this repository, we implemented the FLIS algorithms (FLIS-DC, FLIS-HC). The algorithms are evaluated on 4 datasets (Cifar-100/10, Fashion-MNIST, SVHN) with label distribution skew (noniid-#label2, noniid-#label3, noniid-labeldir).
 
 Example scripts to run the code are provided under `scripts/`. Please follow the paper to modify the scripts for more experiments. You may change the parameters listed in the following table.
 
@@ -23,11 +22,11 @@ Example scripts to run the code are provided under `scripts/`. Please follow the
 
 ## Results
 
-### Partition: `non-iid-#label2`
-| Algorithm      | FMNIST | CIFAR-10 | SVHN   |
-| ---            | ---    | ---      | ---    |
-| `FedIS-HT`     | 97.96% | 91.47%   | 95.63% |
-| `FedIS-AHC`    | 97.41% | 84.06%   | 93.57% |
+%### Partition: `non-iid-#label2`
+%| Algorithm      | FMNIST | CIFAR-10 | SVHN   |
+%| ---            | ---    | ---      | ---    |
+%| `FedIS-HT`     | 97.96% | 91.47%   | 95.63% |
+%| `FedIS-AHC`    | 97.41% | 84.06%   | 93.57% |
 
 
 ### Partition: `non-iid-#label3`
