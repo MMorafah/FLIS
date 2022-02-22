@@ -22,9 +22,9 @@ Example scripts to run the code are provided under `scripts/`. Please follow the
 
 ## Results
 
-%### Partition: `non-iid-#label2`
-%| Algorithm      | FMNIST | CIFAR-10 | SVHN   |
-%| ---            | ---    | ---      | ---    |
+$### Partition: `non-iid-#label2`
+$| Algorithm      | FMNIST | CIFAR-10 | SVHN   |
+$| ---            | ---    | ---      | ---    |
 %| `FedIS-HT`     | 97.96% | 91.47%   | 95.63% |
 %| `FedIS-AHC`    | 97.41% | 84.06%   | 93.57% |
 
