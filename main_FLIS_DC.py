@@ -29,7 +29,7 @@ def mkdirs(dirpath):
     except Exception as _:
         pass
     
-path = args.savedir + args.alg + '/' + args.partition + '/' + args.dataset + '/' #+ str(args.trial)
+path = args.savedir + args.alg + '/' + args.partition + '/' + args.dataset + '/'
 mkdirs(path)
 
 ##################################### Data partitioning section 
@@ -58,14 +58,14 @@ idxs_test = idxs_labels_test[0, :]
 labels_test = idxs_labels_test[1, :]
 
 idxs_test_shared = []
-N = 250
+N = args.nsamples_shared//args.nclasses
 ind = 0
-for k in range(10): 
+for k in range(args.nclasses): 
     ind = max(np.where(labels_test==k)[0])
     idxs_test_shared.extend(idxs_test[(ind - N):(ind)])
 
 test_targets = np.array(test_ds_global.target)
-for i in range(10):
+for i in range(args.nclasses):
     print(f'Shared data has label: {i}, {len(np.where(test_targets[idxs_test_shared[i*N:(i+1)*N]]==i)[0])} samples')
 
 shared_data_loader = DataLoader(DatasetSplit(test_ds_global, idxs_test_shared), batch_size=N, shuffle=False)
@@ -74,32 +74,88 @@ for x,y in shared_data_loader:
     print(x.shape)
     
 ################################### build model
+def init_nets(args, dropout_p=0.5):
+
+    users_model = []
+
+    for net_i in range(-1, args.num_users):
+        if args.dataset == "generated":
+            net = PerceptronModel().to(args.device)
+        elif args.model == "mlp":
+            if args.dataset == 'covtype':
+                input_size = 54
+                output_size = 2
+                hidden_sizes = [32,16,8]
+            elif args.dataset == 'a9a':
+                input_size = 123
+                output_size = 2
+                hidden_sizes = [32,16,8]
+            elif args.dataset == 'rcv1':
+                input_size = 47236
+                output_size = 2
+                hidden_sizes = [32,16,8]
+            elif args.dataset == 'SUSY':
+                input_size = 18
+                output_size = 2
+                hidden_sizes = [16,8]
+            net = FcNet(input_size, hidden_sizes, output_size, dropout_p).to(args.device)
+        elif args.model == "vgg":
+            net = vgg11().to(args.device)
+        elif args.model == "simple-cnn":
+            if args.dataset in ("cifar10", "cinic10", "svhn"):
+                net = SimpleCNN(input_dim=(16 * 5 * 5), hidden_dims=[120, 84], output_dim=10).to(args.device)
+            elif args.dataset in ("mnist", 'femnist', 'fmnist'):
+                net = SimpleCNNMNIST(input_dim=(16 * 4 * 4), hidden_dims=[120, 84], output_dim=10).to(args.device)
+            elif args.dataset == 'celeba':
+                net = SimpleCNN(input_dim=(16 * 5 * 5), hidden_dims=[120, 84], output_dim=2).to(args.device)
+        elif args.model =="simple-cnn-3":
+            if args.dataset == 'cifar100': 
+                net = SimpleCNN_3(input_dim=(16 * 3 * 5 * 5), hidden_dims=[120*3, 84*3], output_dim=100).to(args.device)
+            if args.dataset == 'tinyimagenet':
+                net = SimpleCNNTinyImagenet_3(input_dim=(16 * 3 * 13 * 13), hidden_dims=[120*3, 84*3], 
+                                              output_dim=200).to(args.device)
+        elif args.model == "vgg-9":
+            if args.dataset in ("mnist", 'femnist'):
+                net = ModerateCNNMNIST().to(args.device)
+            elif args.dataset in ("cifar10", "cinic10", "svhn"):
+                # print("in moderate cnn")
+                net = ModerateCNN().to(args.device)
+            elif args.dataset == 'celeba':
+                net = ModerateCNN(output_dim=2).to(args.device)
+        elif args.model == 'resnet9': 
+            if args.dataset == 'cifar100': 
+                net = ResNet9(in_channels=3, num_classes=100)
+        elif args.model == "resnet":
+            net = ResNet50_cifar10().to(args.device)
+        elif args.model == "vgg16":
+            net = vgg16().to(args.device)
+        else:
+            print("not supported yet")
+            exit(1)
+        if net_i == -1: 
+            net_glob = copy.deepcopy(net)
+            initial_state_dict = copy.deepcopy(net_glob.state_dict())
+            server_state_dict = copy.deepcopy(net_glob.state_dict())
+            if args.load_initial:
+                initial_state_dict = torch.load(args.load_initial)
+                server_state_dict = torch.load(args.load_initial)
+                net_glob.load_state_dict(initial_state_dict)
+        else:
+            users_model.append(copy.deepcopy(net))
+            users_model[net_i].load_state_dict(initial_state_dict)
+
+#     model_meta_data = []
+#     layer_type = []
+#     for (k, v) in nets[0].state_dict().items():
+#         model_meta_data.append(v.shape)
+#         layer_type.append(k)
+
+    return users_model, net_glob, initial_state_dict, server_state_dict
+
 print(f'MODEL: {args.model}, Dataset: {args.dataset}')
 
-users_model = []
-if args.model == 'lenet5' and args.dataset == 'cifar10':
-    net_glob = LeNet5Cifar10().to(args.device)
-    net_glob.apply(weight_init)
-    users_model = [LeNet5Cifar10().to(args.device).apply(weight_init) for _ in range(args.num_users)]
-elif args.model == 'lenet5' and args.dataset == 'cifar100':
-    net_glob = LeNet5Cifar100().to(args.device)
-    net_glob.apply(weight_init)
-    users_model = [LeNet5Cifar100().to(args.device).apply(weight_init) for _ in range(args.num_users)]
-elif args.model == 'lenet5' and args.dataset == 'mnist':
-    net_glob = LeNet5Mnist().to(args.device)
-    net_glob.apply(weight_init)
-    users_model = [LeNet5Mnist().to(args.device).apply(weight_init) for _ in range(args.num_users)]
+users_model, net_glob, initial_state_dict, server_state_dict = init_nets(args, dropout_p=0.5)
 
-if args.load_initial:
-    initial_state_dict = torch.load(args.load_initial)
-    net_glob.load_state_dict(initial_state_dict)
-
-initial_state_dict = copy.deepcopy(net_glob.state_dict())
-server_state_dict = copy.deepcopy(net_glob.state_dict())
-
-for i in range(args.num_users):
-    users_model[i].load_state_dict(initial_state_dict)
-    
 print(net_glob)
 
 total = 0 
@@ -113,7 +169,7 @@ print(total)
 ################################# Initializing Clients 
 
 clients = []
-    
+
 for idx in range(args.num_users):
     
     dataidxs = net_dataidx_map[idx]
@@ -141,11 +197,10 @@ for idx in range(args.num_users):
                                                                        dataidxs, noise_level, 
                                                                        dataidxs_test=dataidxs_test)
     
-    clients.append(Client_ClusterFL(idx, copy.deepcopy(users_model[idx]), args.local_bs, args.local_ep, 
+    clients.append(Client_FLIS(idx, copy.deepcopy(users_model[idx]), args.local_bs, args.local_ep, 
                args.lr, args.momentum, args.device, train_dl_local, test_dl_local))
     
 
-    
 ###################################### Federation 
 
 float_formatter = "{:.4f}".format

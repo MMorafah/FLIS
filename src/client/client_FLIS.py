@@ -5,7 +5,7 @@ import torch
 from torch import nn, optim
 import torch.nn.functional as F
 
-class Client_ClusterFL(object):
+class Client_FLIS(object):
     def __init__(self, name, model, local_bs, local_ep, lr, momentum, device, 
                  train_dl_local = None, test_dl_local = None):
         
