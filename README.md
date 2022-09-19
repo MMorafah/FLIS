@@ -37,9 +37,8 @@ The descriptions of parameters are as follows:
 | gpu          | The IDs of GPU to use. E.g., `TODO` |
 | print_freq   | The frequency to print training logs. E.g., with `print_freq=10`, training logs are displayed every 10 communication rounds. |
 
-## Results
-
 <!---
+## Results
 {% comment %} 
 ### Partition: `non-iid-#label2`
 | Algorithm      | FMNIST | CIFAR-10 | SVHN   |
