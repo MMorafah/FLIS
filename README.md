@@ -10,7 +10,8 @@ In this repository, we release the official implementation for FLIS algorithms (
 We provide scripts to run the algorithms, which are put under `scripts/`. Here is an example to run the script:
 ```
 cd scripts
-bash fedavg.sh
+bash flis_dc.sh
+bash flis_hc.sh
 ```
 Please follow the paper to modify the scripts for more experiments. You may change the parameters listed in the following table.
 
