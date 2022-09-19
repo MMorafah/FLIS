@@ -1,10 +1,10 @@
 #/bin/bash
-dir='../save_results/fedis_dc/noniid-labeldir/cifar10'
+dir='../save_results/fedis_hc/noniid-labeldir/cifar10'
 if [ ! -e $dir ]; then
 mkdir -p $dir
 fi
 
-python ../main_FLIS_DC.py --trial=1 \
+python ../main_FLIS_HC.py --trial=1 \
 --rounds=20 \
 --num_users=100 \
 --frac=0.1 \
@@ -15,13 +15,13 @@ python ../main_FLIS_DC.py --trial=1 \
 --model=simple-cnn \
 --dataset=cifar10 \
 --datadir='../../data/' \
---savedir='../save_results/fedis_dc/' \
+--savedir='../save_results/fedis_hc/' \
 --partition='noniid-labeldir' \
---alg='flis_dc' \
+--alg='flis_hc' \
 --beta=0.5 \
 --local_view \
 --noise=0 \
---cluster_alpha=0.4 \
+--cluster_alpha=0.45 \
 --nclasses=10 \
 --nsamples_shared=2500 \
 --gpu=0 \

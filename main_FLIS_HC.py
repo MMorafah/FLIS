@@ -198,9 +198,23 @@ for idx in range(args.num_users):
                                                                        dataidxs, noise_level, 
                                                                        dataidxs_test=dataidxs_test)
     
-    clients.append(Client_ClusterFL(idx, copy.deepcopy(users_model[idx]), args.local_bs, args.local_ep, 
+    clients.append(Client_FLIS(idx, copy.deepcopy(users_model[idx]), args.local_bs, args.local_ep, 
                args.lr, args.momentum, args.device, train_dl_local, test_dl_local))
     
+
+###################################### Pre-Federation (HC)
+idxs_users = np.arange(args.num_users)
+for idx in idxs_users:
+    clients[idx].set_state_dict(copy.deepcopy(server_state_dict)) 
+    _ = clients[idx].train(is_print=False)
+
+clients_correct_pred_per_label, clients_similarity, mat_sim, A = \
+create_sim_logits(idxs_users, clients, shared_data_loader, args, nclasses=args.nclasses, nsamples=args.nsamples_shared)
+
+clusters = form_clusters(sim_mat, idxs_users, alpha=args.cluster_alpha)
+
+for idx in idxs_users:
+    clients[idx].set_state_dict(copy.deepcopy(server_state_dict))
 
 ###################################### Federation 
 
@@ -252,37 +266,25 @@ for iteration in range(args.rounds):
     print(f'###### ROUND {iteration+1} ######')
     print(f'Clients {idxs_users}')
     
-    selected_clusters.clear()
-    if iteration+1 > 1:
-        selected_clusters = {i: [] for i in range(len(clusters))}
     for idx in idxs_users:
-        if iteration+1 > 1:
-            assert (len(clusters) == len(w_glob_per_cluster))
-            count_clusters[iteration] = len(clusters)
+        if iteration+1 > 1:            
+            w_avg = []
+            for jj in clusters[idx]:
+                w_avg.append(copy.deepcopy(clients[jj].get_state_dict()))
             
-            acc_select = []
-            for i in range(len(clusters)):
-                clients[idx].set_state_dict(copy.deepcopy(w_glob_per_cluster[i])) 
+            total_data_points = sum([len(net_dataidx_map[r]) for r in clusters[idx]])
+            fed_avg_freqs = [len(net_dataidx_map[r]) / total_data_points for r in clusters[idx]]
+            w_avg = FedAvg(w_avg, weight_avg=fed_avg_freqs)
 
-                loss, acc = clients[idx].eval_test() 
-                acc_select.append(acc)
-
-            idx_cluster = np.argmax(acc_select)
-            clients[idx].set_state_dict(copy.deepcopy(w_glob_per_cluster[idx_cluster])) 
-
-            selected_clusters[idx_cluster].append(idx)
-            print(f'Client {idx}, Select Cluster: {idx_cluster}')
-            print(f'acc clusters: {acc_select}')
-
+            clients[idx].set_state_dict(copy.deepcopy(w_avg)) 
             
         loss, acc = clients[idx].eval_test()        
-            
+        
         init_local_tacc.append(acc)
         init_local_tloss.append(loss)
             
         loss = clients[idx].train(is_print=False)
                         
-        w_locals.append(copy.deepcopy(clients[idx].get_state_dict()))
         loss_locals.append(copy.deepcopy(loss))
                         
         loss, acc = clients[idx].eval_test()
@@ -292,57 +294,25 @@ for iteration in range(args.rounds):
   
         final_local_tacc.append(acc)
         final_local_tloss.append(loss)           
-    
-    # Finding clusters 
-    clusters, clusters_bm, w_locals_clusters, clients_correct_pred_per_label, clients_similarity, mat_sim, A = \
-    hc_cluster_logits(idxs_users, clients, shared_data_loader, args, alpha=args.cluster_alpha, 
-                   nclasses=args.nclasses, nsamples=args.nsamples_shared)
-
-    ## Clustering Error 
-    #c_err, c_acc = error_clustering(clusters_bm, idxs_users, traindata_cls_counts)
-    c_err = 0
-    c_acc = 0 
-    clust_err.append(c_err)
-    clust_acc.append(c_acc)
-    
-    clusters_label = []
-    clusters_client_label = []
-    for c in clusters: 
-        temp = []
-        temp2 = []
-        for k in c:
-            temp2.append(list(traindata_cls_counts[k].keys()))
-            temp.extend(list(traindata_cls_counts[k].keys()))
-        clusters_client_label.append(temp2)
-        temp = list(set(temp))
-        clusters_label.append(temp)
-
-    # FedAvg per cluster
-    
-    total_data_points = [sum([len(net_dataidx_map[r]) for r in clust]) for clust in clusters]
-    fed_avg_freqs = [[len(net_dataidx_map[r]) / total_data_points[clust_id] for r in clusters[clust_id]] 
-                     for clust_id in range(len(clusters))]
-        
-    w_glob_per_cluster.clear()
-    acc_glob_pc = []
-    for i in range(len(clusters)):
-        ww = FedAvg(w_locals_clusters[i], weight_avg = fed_avg_freqs[i])
-        w_glob_per_cluster.append(ww)
-        net_glob.load_state_dict(copy.deepcopy(ww))
-        _, acc = eval_test(net_glob, args, test_dl_global)
-        if acc > best_glob_acc:
-            best_glob_acc = acc 
-            best_glob_w = copy.deepcopy(ww)
-        acc_glob_pc.append(acc)
-        
-    idx_cluster = np.argmax(acc_glob_pc)
         
     # update global weights
-    w_glob = FedAvg(w_locals)
+    w_locals = []
+    for ii in idxs_users: 
+        w_locals.append(copy.deepcopy(clients[ii].get_state_dict()))
+    
+    total_data_points = sum([len(net_dataidx_map[r]) for r in idxs_users])
+    fed_avg_freqs = [len(net_dataidx_map[r]) / total_data_points for r in idxs_users]
+    
+    w_glob = FedAvg(w_locals, weight_avg=fed_avg_freqs)
 
     # copy weight to net_glob
     net_glob.load_state_dict(w_glob)
     
+    _, acc = eval_test(net_glob, args, test_dl_global)
+    if acc > best_glob_acc:
+        best_glob_acc = acc 
+        best_glob_w = copy.deepcopy(w_glob)
+
     # print loss
     loss_avg = sum(loss_locals) / len(loss_locals)
     avg_init_tloss = sum(init_local_tloss) / len(init_local_tloss)
@@ -389,14 +359,8 @@ for iteration in range(args.rounds):
     print('')
     print(f'Similarity Matrix: \n {mat_sim}')
     print('')
-    print(f'Selected Clusters {selected_clusters}')
-    print('')
-    print(f'New Cluster {clusters}')
-    print(f'Error of Clustering {clust_err[-1]}')
-    print(f'Acc of Clustering {clust_acc[-1]}')
-    print(f'Clusters Lables {clusters_label}')
+    print(f'Cluster {clusters}')
     print(f'Clusters Clients Lables {clusters_client_label}')
-    print(f'Clusters Glob Acc: {acc_glob_pc}')
     
     loss_train.append(loss_avg)
     
@@ -419,28 +383,28 @@ for iteration in range(args.rounds):
     gc.collect()
     
 ############################### Saving Training Results 
-with open(path+str(args.trial)+'_loss_train.npy', 'wb') as fp:
-    loss_train = np.array(loss_train)
-    np.save(fp, loss_train)
+# with open(path+str(args.trial)+'_loss_train.npy', 'wb') as fp:
+#     loss_train = np.array(loss_train)
+#     np.save(fp, loss_train)
     
-with open(path+str(args.trial)+'_init_tacc_pr.npy', 'wb') as fp:
-    init_tacc_pr = np.array(init_tacc_pr)
-    np.save(fp, init_tacc_pr)
+# with open(path+str(args.trial)+'_init_tacc_pr.npy', 'wb') as fp:
+#     init_tacc_pr = np.array(init_tacc_pr)
+#     np.save(fp, init_tacc_pr)
     
-with open(path+str(args.trial)+'_init_tloss_pr.npy', 'wb') as fp:
-    init_tloss_pr = np.array(init_tloss_pr)
-    np.save(fp, init_tloss_pr)
+# with open(path+str(args.trial)+'_init_tloss_pr.npy', 'wb') as fp:
+#     init_tloss_pr = np.array(init_tloss_pr)
+#     np.save(fp, init_tloss_pr)
     
-with open(path+str(args.trial)+'_final_tacc_pr.npy', 'wb') as fp:
-    final_tacc_pr = np.array(final_tacc_pr)
-    np.save(fp, final_tacc_pr)
+# with open(path+str(args.trial)+'_final_tacc_pr.npy', 'wb') as fp:
+#     final_tacc_pr = np.array(final_tacc_pr)
+#     np.save(fp, final_tacc_pr)
     
-with open(path+str(args.trial)+'_final_tloss_pr.npy', 'wb') as fp:
-    final_tloss_pr = np.array(final_tloss_pr)
-    np.save(fp, final_tloss_pr)
+# with open(path+str(args.trial)+'_final_tloss_pr.npy', 'wb') as fp:
+#     final_tloss_pr = np.array(final_tloss_pr)
+#     np.save(fp, final_tloss_pr)
     
-with open(path+str(args.trial)+'_best_glob_w.pt', 'wb') as fp:
-    torch.save(best_glob_w, fp)
+# with open(path+str(args.trial)+'_best_glob_w.pt', 'wb') as fp:
+#     torch.save(best_glob_w, fp)
 ############################### Printing Final Test and Train ACC / LOSS
 test_loss = []
 test_acc = []
@@ -470,14 +434,6 @@ print(f'Train Acc: {train_acc}, Test Acc: {test_acc}')
 print(f'Best Clients AVG Acc: {np.mean(clients_best_acc)}')
 print(f'Best Global Model Acc: {best_glob_acc}')
 
-Avg_clusters_per_round = np.mean(list(count_clusters.values()))
-total_clusters = np.sum(list(count_clusters.values()))
-print(f'Total_clusters: {total_clusters}, Avg clusters per round: {Avg_clusters_per_round}')
-
-avg_clust_err = np.mean(clust_err)
-avg_clust_acc = np.mean(clust_acc)
-print(f'Avg clustering error: {avg_clust_err}, Avg clustering acc: {avg_clust_acc}')
-
 ############################# Saving Print Results 
 with open(path+str(args.trial)+'_final_results.txt', 'a') as text_file:
     print(f'Train Loss: {train_loss}, Test_loss: {test_loss}', file=text_file)
@@ -485,7 +441,3 @@ with open(path+str(args.trial)+'_final_results.txt', 'a') as text_file:
 
     print(f'Best Clients AVG Acc: {np.mean(clients_best_acc)}', file=text_file)
     print(f'Best Global Model Acc: {best_glob_acc}', file=text_file)
-    print(f'Total_clusters: {total_clusters}, Avg clusters per round: {Avg_clusters_per_round}', file=text_file)
-    print(f'Avg clustering error: {avg_clust_err}, Avg clustering acc: {avg_clust_acc}')
-
-    

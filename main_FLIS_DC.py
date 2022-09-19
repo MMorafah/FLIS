@@ -382,17 +382,17 @@ for iteration in range(args.rounds):
     for idx in idxs_users:
         print(f'Client {idx}, Correct_pred_per_label: {clients_correct_pred_per_label[idx]}')
         #print(f'similarity: {clients_similarity[idx]:}')
-       
-    print('')
-    print(f'Similarity Matrix: \n {mat_sim}')
-    print('')
-    print(f'Selected Clusters {selected_clusters}')
-    print('')
-    print(f'New Cluster {clusters}')
-    print(f'Error of Clustering {clust_err[-1]}')
-    print(f'Acc of Clustering {clust_acc[-1]}')
-    print(f'Clusters Lables {clusters_label}')
-    print(f'Clusters Clients Lables {clusters_client_label}')
+        
+#     print('')
+#     print(f'Similarity Matrix: \n {mat_sim}')
+#     print('')
+#     print(f'Selected Clusters {selected_clusters}')
+#     print('')
+#     print(f'New Cluster {clusters}')
+#     print(f'Error of Clustering {clust_err[-1]}')
+#     print(f'Acc of Clustering {clust_acc[-1]}')
+#     print(f'Clusters Lables {clusters_label}')
+#     print(f'Clusters Clients Lables {clusters_client_label}')
     print(f'Clusters Glob Acc: {acc_glob_pc}')
     
     loss_train.append(loss_avg)
@@ -416,28 +416,28 @@ for iteration in range(args.rounds):
     gc.collect()
     
 ############################### Saving Training Results 
-with open(path+str(args.trial)+'_loss_train.npy', 'wb') as fp:
-    loss_train = np.array(loss_train)
-    np.save(fp, loss_train)
+# with open(path+str(args.trial)+'_loss_train.npy', 'wb') as fp:
+#     loss_train = np.array(loss_train)
+#     np.save(fp, loss_train)
     
-with open(path+str(args.trial)+'_init_tacc_pr.npy', 'wb') as fp:
-    init_tacc_pr = np.array(init_tacc_pr)
-    np.save(fp, init_tacc_pr)
+# with open(path+str(args.trial)+'_init_tacc_pr.npy', 'wb') as fp:
+#     init_tacc_pr = np.array(init_tacc_pr)
+#     np.save(fp, init_tacc_pr)
     
-with open(path+str(args.trial)+'_init_tloss_pr.npy', 'wb') as fp:
-    init_tloss_pr = np.array(init_tloss_pr)
-    np.save(fp, init_tloss_pr)
+# with open(path+str(args.trial)+'_init_tloss_pr.npy', 'wb') as fp:
+#     init_tloss_pr = np.array(init_tloss_pr)
+#     np.save(fp, init_tloss_pr)
     
-with open(path+str(args.trial)+'_final_tacc_pr.npy', 'wb') as fp:
-    final_tacc_pr = np.array(final_tacc_pr)
-    np.save(fp, final_tacc_pr)
+# with open(path+str(args.trial)+'_final_tacc_pr.npy', 'wb') as fp:
+#     final_tacc_pr = np.array(final_tacc_pr)
+#     np.save(fp, final_tacc_pr)
     
-with open(path+str(args.trial)+'_final_tloss_pr.npy', 'wb') as fp:
-    final_tloss_pr = np.array(final_tloss_pr)
-    np.save(fp, final_tloss_pr)
+# with open(path+str(args.trial)+'_final_tloss_pr.npy', 'wb') as fp:
+#     final_tloss_pr = np.array(final_tloss_pr)
+#     np.save(fp, final_tloss_pr)
     
-with open(path+str(args.trial)+'_best_glob_w.pt', 'wb') as fp:
-    torch.save(best_glob_w, fp)
+# with open(path+str(args.trial)+'_best_glob_w.pt', 'wb') as fp:
+#     torch.save(best_glob_w, fp)
 ############################### Printing Final Test and Train ACC / LOSS
 test_loss = []
 test_acc = []
