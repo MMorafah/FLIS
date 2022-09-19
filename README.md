@@ -1,6 +1,6 @@
 # FLIS
 
-The code of paper [FLIS: Clustered Federated Learning via Inference Similarity for Non-IID Data Distribution](https://arxiv.org/abs/2208.09754).
+The official code of paper [FLIS: Clustered Federated Learning via Inference Similarity for Non-IID Data Distribution](https://arxiv.org/abs/2208.09754).
 
 In this repository, we release the official implementation for FLIS algorithms (FLIS-DC, FLIS-HC). The algorithms are evaluated on 4 datasets (Cifar-100/10, Fashion-MNIST, SVHN) with non-iid label distribution skew (noniid-#label2, noniid-#label3, noniid-labeldir).
 
@@ -63,7 +63,7 @@ The descriptions of parameters are as follows:
 {% endcomment %}
 -->
 
-# Citation 
+## Citation 
 Please cite our work if you find it relavent to your research and used our implementations. 
 ```
 @article{morafah2022flis,
@@ -74,9 +74,9 @@ Please cite our work if you find it relavent to your research and used our imple
 }
 ```
 
-# Acknowledgements
+## Acknowledgements
 
 Our code and implementation has been adapted from [NIID-Bench](https://github.com/Xtra-Computing/NIID-Bench) repository. 
 
-# Contact 
+## Contact 
 If you had any questions, please feel free to contact me at mmorafah@eng.ucsd.edu
