@@ -75,7 +75,7 @@ Please cite our work if you find it relavent to your research and used our imple
 
 ## Acknowledgements
 
-Our code and implementation has been adapted from [NIID-Bench](https://github.com/Xtra-Computing/NIID-Bench) repository. 
+Our code and implementation has been mostly adapted from [NIID-Bench](https://github.com/Xtra-Computing/NIID-Bench) repository. 
 
 ## Contact 
 If you had any questions, please feel free to contact me at mmorafah@eng.ucsd.edu
