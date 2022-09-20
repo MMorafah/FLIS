@@ -1,5 +1,0 @@
-Train Loss: 0.9339648445735436, Test_loss: 2.2873339618053903
-Train Acc: 65.2129135131836, Test Acc: 34.961788177490234
-Best Clients AVG Acc: 34.80478021621704
-Best Global Model Acc: 43.7400016784668
-Total_clusters: 190, Avg clusters per round: 10.0

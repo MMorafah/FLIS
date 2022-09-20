@@ -208,7 +208,7 @@ for idx in idxs_users:
     clients[idx].set_state_dict(copy.deepcopy(server_state_dict)) 
     _ = clients[idx].train(is_print=False)
 
-clients_correct_pred_per_label, clients_similarity, mat_sim, A = \
+clients_correct_pred_per_label, clients_similarity, sim_mat, A = \
 create_sim_logits(idxs_users, clients, shared_data_loader, args, nclasses=args.nclasses, nsamples=args.nsamples_shared)
 
 clusters = form_clusters(sim_mat, idxs_users, alpha=args.cluster_alpha)
@@ -357,10 +357,10 @@ for iteration in range(args.rounds):
         #print(f'similarity: {clients_similarity[idx]:}')
        
     print('')
-    print(f'Similarity Matrix: \n {mat_sim}')
+    print(f'Similarity Matrix: \n {sim_mat}')
     print('')
     print(f'Cluster {clusters}')
-    print(f'Clusters Clients Lables {clusters_client_label}')
+    #print(f'Clusters Clients Lables {clusters_client_label}')
     
     loss_train.append(loss_avg)
     

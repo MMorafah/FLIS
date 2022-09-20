@@ -1,8 +1,8 @@
 #/bin/bash
-dir='../save_results/fedis_hc/noniid-labeldir/cifar10'
-if [ ! -e $dir ]; then
-mkdir -p $dir
-fi
+# dir='../save_results/fedis_hc/noniid-labeldir/cifar10'
+# if [ ! -e $dir ]; then
+# mkdir -p $dir
+# fi
 
 python ../main_FLIS_HC.py --trial=1 \
 --rounds=20 \
