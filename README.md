@@ -1,4 +1,4 @@
-# FLIS
+# FLIS: Clustered Federated Learning via Inference Similarity for Non-IID Data Distribution
 
 The official code of paper [FLIS: Clustered Federated Learning via Inference Similarity for Non-IID Data Distribution](https://arxiv.org/abs/2208.09754).
 
